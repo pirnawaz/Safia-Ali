@@ -61,8 +61,8 @@ A production-ready Boutique ERP + POS web application for luxury made-to-order f
 ### 1. Clone and Install
 
 ```bash
-git clone <repository-url>
-cd safia-ali-erp
+git clone https://github.com/pirnawaz/Safia-Ali.git
+cd Safia-Ali
 npm install
 ```
 
@@ -187,4 +187,3 @@ For issues and questions, please contact the development team.
 ## License
 
 Proprietary - All rights reserved
-
