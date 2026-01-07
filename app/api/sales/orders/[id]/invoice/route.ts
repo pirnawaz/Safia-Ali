@@ -78,7 +78,7 @@ export async function GET(
       invoice_number: invoiceNumber,
     })
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="invoice-${invoiceNumber}.pdf"`,

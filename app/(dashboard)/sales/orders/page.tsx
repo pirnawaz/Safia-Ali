@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrency } from "@/lib/format"
 
 interface SalesOrder {
   id: string
@@ -62,7 +63,7 @@ export default function SalesOrdersPage() {
                     Customer: {order.customers?.name || "Walk-in"}
                   </p>
                   <p className="text-sm font-semibold">
-                    Total: ₹{order.total_amount.toFixed(2)}
+                    Total: {formatCurrency(order.total_amount)}
                   </p>
                 </div>
                 <Link href={`/sales/orders/${order.id}`}>

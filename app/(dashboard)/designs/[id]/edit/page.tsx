@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrency } from "@/lib/format"
 
 export default function EditDesignPage({
   params,
@@ -46,7 +47,7 @@ export default function EditDesignPage({
               <p><strong>SKU:</strong> {design.sku}</p>
               <p><strong>Category:</strong> {design.category || "N/A"}</p>
               <p><strong>Size Range:</strong> {design.size_range || "N/A"}</p>
-              <p><strong>Selling Price:</strong> ₹{design.base_selling_price.toFixed(2)}</p>
+              <p><strong>Selling Price:</strong> {formatCurrency(design.base_selling_price)}</p>
             </div>
           </CardContent>
         </Card>

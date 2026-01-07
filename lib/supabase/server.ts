@@ -1,13 +1,14 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
+import { env } from '@/lib/env'
 
 export async function createServerComponentClient() {
   const cookieStore = await cookies()
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.supabase.url,
+    env.supabase.anonKey,
     {
       cookies: {
         get(name: string) {
@@ -37,10 +38,15 @@ export async function createServerComponentClient() {
 }
 
 // Service role client for admin operations (server-side only)
+// WARNING: This client bypasses RLS. Use with extreme caution.
 export function createServiceRoleClient() {
+  if (!env.supabase.serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
+  }
+  
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    env.supabase.url,
+    env.supabase.serviceRoleKey,
     {
       auth: {
         autoRefreshToken: false,

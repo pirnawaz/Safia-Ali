@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrency } from "@/lib/format"
 
 interface BOMItem {
   id: string
@@ -88,7 +89,7 @@ export default function BOMEditorPage({
               <div key={item.id} className="border p-4 rounded">
                 <p><strong>{item.inventory_items.name}</strong> ({item.inventory_items.sku})</p>
                 <p>Quantity: {item.quantity} {item.uom}</p>
-                <p>Cost: ₹{(item.quantity * item.inventory_items.weighted_avg_cost).toFixed(2)}</p>
+                <p>Cost: {formatCurrency(item.quantity * item.inventory_items.weighted_avg_cost)}</p>
               </div>
             ))}
 

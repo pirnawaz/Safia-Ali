@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PermissionGate } from "@/components/auth/PermissionGate"
+import { formatCurrency } from "@/lib/format"
 
 interface Design {
   id: string
@@ -53,11 +54,11 @@ export default function DesignsPage() {
                   Category: {design.category || "N/A"}
                 </p>
                 <p className="text-sm font-semibold">
-                  Selling Price: ₹{design.base_selling_price.toFixed(2)}
+                  Selling Price: {formatCurrency(design.base_selling_price)}
                 </p>
                 <PermissionGate permission="viewCostPrice">
                   <p className="text-sm text-gray-500">
-                    Cost Price: ₹{design.base_cost_price.toFixed(2)}
+                    Cost Price: {formatCurrency(design.base_cost_price)}
                   </p>
                 </PermissionGate>
                 <div className="flex gap-2 mt-4">

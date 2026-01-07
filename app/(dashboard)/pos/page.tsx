@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrency } from "@/lib/format"
 
 interface Design {
   id: string
@@ -98,102 +99,119 @@ export default function POSPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-screen p-6">
+    <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 md:gap-6 h-screen p-4 md:p-6">
       {/* Product Search */}
-      <div className="lg:col-span-2 space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Search</CardTitle>
+      <div className="lg:col-span-2 space-y-4 overflow-hidden flex flex-col">
+        <Card className="flex-1 flex flex-col overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg md:text-xl">Product Search</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col overflow-hidden">
             <Input
               placeholder="Search by name or SKU..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="mb-4"
+              className="mb-4 h-12 text-base touch-manipulation"
             />
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 overflow-y-auto flex-1">
               {filteredDesigns?.map((design) => (
                 <Card
                   key={design.id}
-                  className="cursor-pointer hover:bg-gray-50"
+                  className="cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
                   onClick={() => addToCart(design)}
                 >
-                  <CardContent className="p-4">
-                    <p className="font-semibold">{design.name}</p>
-                    <p className="text-sm text-gray-600">{design.sku}</p>
-                    <p className="text-sm font-semibold mt-2">
-                      ₹{design.base_selling_price.toFixed(2)}
+                  <CardContent className="p-4 min-h-[100px] flex flex-col justify-between">
+                    <div>
+                      <p className="font-semibold text-sm md:text-base line-clamp-2">{design.name}</p>
+                      <p className="text-xs md:text-sm text-gray-600 mt-1">{design.sku}</p>
+                    </div>
+                    <p className="text-base md:text-lg font-bold mt-2 text-blue-600">
+                      {formatCurrency(design.base_selling_price)}
                     </p>
                   </CardContent>
                 </Card>
               ))}
             </div>
+            {(!filteredDesigns || filteredDesigns.length === 0) && (
+              <div className="flex-1 flex items-center justify-center text-gray-500">
+                No products found
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Cart */}
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Cart</CardTitle>
+      {/* Cart - Sticky on mobile */}
+      <div className="lg:space-y-4 lg:sticky lg:top-6 lg:h-fit">
+        <Card className="lg:max-h-[calc(100vh-3rem)] flex flex-col">
+          <CardHeader className="pb-3 sticky top-0 bg-white z-10 border-b">
+            <CardTitle className="text-lg md:text-xl">Cart ({cart.length})</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 md:space-y-4 overflow-y-auto flex-1 pt-4">
             {cart.length === 0 ? (
-              <p className="text-gray-500">Cart is empty</p>
+              <p className="text-gray-500 text-center py-8">Cart is empty</p>
             ) : (
               <>
-                {cart.map((item, index) => (
-                  <div key={index} className="border p-3 rounded">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-semibold">{item.design.name}</p>
-                        <p className="text-sm text-gray-600">
-                          ₹{item.design.base_selling_price.toFixed(2)} each
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              updateQuantity(index, Math.max(1, item.quantity - 1))
-                            }
-                          >
-                            -
-                          </Button>
-                          <span>{item.quantity}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateQuantity(index, item.quantity + 1)}
-                          >
-                            +
-                          </Button>
+                <div className="space-y-3">
+                  {cart.map((item, index) => (
+                    <div key={index} className="border p-3 rounded-lg">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm md:text-base truncate">{item.design.name}</p>
+                          <p className="text-xs md:text-sm text-gray-600 mt-1">
+                            {formatCurrency(item.design.base_selling_price)} each
+                          </p>
+                          <div className="flex items-center gap-3 mt-3">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-9 w-9 p-0 touch-manipulation"
+                              onClick={() =>
+                                updateQuantity(index, Math.max(1, item.quantity - 1))
+                              }
+                            >
+                              -
+                            </Button>
+                            <span className="font-semibold min-w-[2rem] text-center">{item.quantity}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-9 w-9 p-0 touch-manipulation"
+                              onClick={() => updateQuantity(index, item.quantity + 1)}
+                            >
+                              +
+                            </Button>
+                          </div>
                         </div>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="touch-manipulation shrink-0"
+                          onClick={() => removeFromCart(index)}
+                        >
+                          Remove
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => removeFromCart(index)}
-                      >
-                        Remove
-                      </Button>
                     </div>
-                  </div>
-                ))}
-                <div className="border-t pt-4">
-                  <p className="text-lg font-bold">
-                    Total: ₹{total.toFixed(2)}
-                  </p>
+                  ))}
                 </div>
-                <Button
-                  className="w-full"
-                  onClick={handleCheckout}
-                  disabled={cart.length === 0}
-                >
-                  Checkout
-                </Button>
+                <div className="border-t pt-4 sticky bottom-0 bg-white">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-base md:text-lg font-semibold">Total:</span>
+                      <span className="text-xl md:text-2xl font-bold text-blue-600">
+                        {formatCurrency(total)}
+                      </span>
+                    </div>
+                    <Button
+                      className="w-full h-12 text-base touch-manipulation"
+                      onClick={handleCheckout}
+                      disabled={cart.length === 0}
+                    >
+                      Checkout
+                    </Button>
+                  </div>
+                </div>
               </>
             )}
           </CardContent>

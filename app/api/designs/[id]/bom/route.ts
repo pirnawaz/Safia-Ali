@@ -2,26 +2,32 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerComponentClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server"
 import { designBOMSchema } from "@/lib/validations/design"
+import { canViewCostPrice } from "@/lib/auth/permissions"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAuth()
+    const user = await requireAuth()
     const supabase = await createServerComponentClient()
 
+    // Check if user can view cost prices
+    const canViewCosts = await canViewCostPrice(user.id)
+
+    // Use appropriate view/table based on permissions
+    const tableName = canViewCosts ? "design_bom" : "design_bom_public"
+    
+    // Adjust inventory_items join based on permissions
+    const inventorySelect = canViewCosts
+      ? "inventory_items (id, sku, name, uom, weighted_avg_cost)"
+      : "inventory_items (id, sku, name, uom)"
+
     const { data, error } = await supabase
-      .from("design_bom")
+      .from(tableName)
       .select(`
         *,
-        inventory_items (
-          id,
-          sku,
-          name,
-          uom,
-          weighted_avg_cost
-        )
+        ${inventorySelect}
       `)
       .eq("design_id", params.id)
 

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createServerComponentClient } from "@/lib/supabase/server"
 import AppSidebar from "@/components/layout/AppSidebar"
 
-export default async function DashboardLayout({
+export default async function DashboardGroupLayout({
   children,
 }: {
   children: React.ReactNode

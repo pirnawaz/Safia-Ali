@@ -2,14 +2,21 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerComponentClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server"
 import { inventoryItemSchema } from "@/lib/validations/inventory"
+import { canViewCostPrice } from "@/lib/auth/permissions"
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth()
+    const user = await requireAuth()
     const supabase = await createServerComponentClient()
 
+    // Check if user can view cost prices
+    const canViewCosts = await canViewCostPrice(user.id)
+
+    // Use appropriate view/table based on permissions
+    const tableName = canViewCosts ? "inventory_items" : "inventory_items_public"
+
     const { data, error } = await supabase
-      .from("inventory_items")
+      .from(tableName)
       .select("*")
       .order("created_at", { ascending: false })
 

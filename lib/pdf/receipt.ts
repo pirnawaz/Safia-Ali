@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit"
+import { formatCurrency } from "@/lib/format"
 
 interface ReceiptData {
   receipt_number: string
@@ -45,7 +46,7 @@ export function generateReceiptPDF(data: ReceiptData): Promise<Buffer> {
       // Payment details
       doc.text("Payment Details:", { underline: true })
       doc.moveDown(0.5)
-      doc.text(`Amount: ₹${data.amount.toFixed(2)}`)
+      doc.text(`Amount: ${formatCurrency(data.amount)}`)
       doc.text(`Method: ${data.method.toUpperCase()}`)
       doc.moveDown()
 

@@ -2,17 +2,24 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerComponentClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server"
 import { labourCostSchema } from "@/lib/validations/design"
+import { canViewCostPrice } from "@/lib/auth/permissions"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAuth()
+    const user = await requireAuth()
     const supabase = await createServerComponentClient()
 
+    // Check if user can view cost prices
+    const canViewCosts = await canViewCostPrice(user.id)
+
+    // Use appropriate view/table based on permissions
+    const tableName = canViewCosts ? "design_labour_costs" : "design_labour_public"
+
     const { data, error } = await supabase
-      .from("design_labour_costs")
+      .from(tableName)
       .select("*")
       .eq("design_id", params.id)
       .single()

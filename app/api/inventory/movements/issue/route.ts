@@ -90,60 +90,34 @@ export async function POST(request: NextRequest) {
 
     const cost = item?.weighted_avg_cost || 0
 
-    // Update stock level
-    await serviceSupabase
-      .from("stock_levels")
-      .update({
-        quantity: stockLevel.quantity - quantity,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("inventory_item_id", inventory_item_id)
-      .eq("location_id", location_id)
+    // Use RPC for transactional inventory issue
+    // This ensures all operations succeed or fail together
+    const { data: result, error: issueError } = await serviceSupabase.rpc(
+      "issue_inventory_transaction",
+      {
+        p_inventory_item_id: inventory_item_id,
+        p_location_id: location_id,
+        p_quantity: quantity,
+        p_job_card_id: job_card_id,
+        p_cost: cost,
+        p_user_id: user.id,
+        p_notes: override ? `OVERRIDE: ${notes || ""}` : notes,
+        p_is_override: override || false,
+      }
+    )
 
-    // Reduce reservation if job card provided
-    if (job_card_id) {
-      await serviceSupabase
-        .from("inventory_reservations")
-        .update({ released_at: new Date().toISOString() })
-        .eq("job_card_id", job_card_id)
-        .eq("inventory_item_id", inventory_item_id)
-        .is("released_at", null)
-
-      // Update reserved quantity in stock level
-      await serviceSupabase
-        .from("stock_levels")
-        .update({
-          reserved_quantity: Math.max(0, stockLevel.reserved_quantity - quantity),
-        })
-        .eq("inventory_item_id", inventory_item_id)
-        .eq("location_id", location_id)
+    if (issueError) {
+      console.error("Transaction error:", issueError)
+      return NextResponse.json(
+        { error: issueError.message || "Failed to issue stock" },
+        { status: 500 }
+      )
     }
 
-    // Create stock movement
-    await serviceSupabase.from("stock_movements").insert({
-      type: "issue",
-      inventory_item_id,
-      location_id,
-      quantity: -quantity,
-      cost,
-      reference_id: job_card_id,
-      user_id: user.id,
-      notes: override ? `OVERRIDE: ${notes || ""}` : notes,
+    return NextResponse.json({ 
+      message: "Stock issued successfully",
+      data: result 
     })
-
-    // Log audit if override
-    if (override) {
-      await serviceSupabase.from("audit_logs").insert({
-        table_name: "stock_levels",
-        record_id: stockLevel.id,
-        action: "update",
-        old_values: { quantity: stockLevel.quantity },
-        new_values: { quantity: stockLevel.quantity - quantity },
-        user_id: user.id,
-      })
-    }
-
-    return NextResponse.json({ message: "Stock issued successfully" })
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to issue stock" },

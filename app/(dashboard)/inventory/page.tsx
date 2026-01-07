@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrency } from "@/lib/format"
 
 interface InventoryItem {
   id: string
@@ -53,7 +54,7 @@ export default function InventoryPage() {
                 </p>
                 <p className="text-sm text-gray-600">UOM: {item.uom}</p>
                 <p className="text-sm font-semibold">
-                  Avg Cost: ₹{item.weighted_avg_cost.toFixed(2)}
+                  Avg Cost: {formatCurrency(item.weighted_avg_cost)}
                 </p>
                 <p className="text-sm text-gray-600">
                   Reorder Level: {item.reorder_level}

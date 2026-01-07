@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit"
+import { formatCurrency } from "@/lib/format"
 
 interface InvoiceData {
   order_number: string
@@ -73,8 +74,8 @@ export function generateInvoicePDF(data: InvoiceData): Promise<Buffer> {
       for (const item of data.items) {
         doc.text(item.design_name, 50, yPos, { width: 200 })
         doc.text(item.quantity.toString(), 300, yPos)
-        doc.text(`₹${item.base_price.toFixed(2)}`, 350, yPos)
-        doc.text(`₹${item.total.toFixed(2)}`, 450, yPos)
+        doc.text(formatCurrency(item.base_price), 350, yPos)
+        doc.text(formatCurrency(item.total), 450, yPos)
         yPos += 20
       }
 
@@ -83,9 +84,9 @@ export function generateInvoicePDF(data: InvoiceData): Promise<Buffer> {
 
       // Totals
       doc.font("Helvetica-Bold")
-      doc.text(`Subtotal: ₹${(data.total_amount - data.tax_amount).toFixed(2)}`, { align: "right" })
-      doc.text(`Tax: ₹${data.tax_amount.toFixed(2)}`, { align: "right" })
-      doc.text(`Total: ₹${data.total_amount.toFixed(2)}`, { align: "right" })
+      doc.text(`Subtotal: ${formatCurrency(data.total_amount - data.tax_amount)}`, { align: "right" })
+      doc.text(`Tax: ${formatCurrency(data.tax_amount)}`, { align: "right" })
+      doc.text(`Total: ${formatCurrency(data.total_amount)}`, { align: "right" })
 
       doc.end()
     } catch (error) {

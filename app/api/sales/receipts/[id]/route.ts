@@ -46,7 +46,7 @@ export async function GET(
       receipt_number: payment.receipt_number,
     })
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="receipt-${payment.receipt_number}.pdf"`,
