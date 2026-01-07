@@ -1,2 +1,2 @@
 # Safia-Ali
-Saf ia Ali Boutique ERP + POS
+Safia Ali Boutique ERP + POS
