@@ -29,9 +29,10 @@ export default function POSPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null)
 
   const { data: designs } = useQuery<Design[]>({
-    queryKey: ["designs"],
+    queryKey: ["designs-pos"],
     queryFn: async () => {
-      const res = await fetch("/api/designs")
+      // POS should only show ready products
+      const res = await fetch("/api/designs?status=ready")
       if (!res.ok) throw new Error("Failed to fetch designs")
       return res.json()
     },

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerComponentClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server"
-import { designBOMSchema } from "@/lib/validations/design"
-import { canViewCostPrice } from "@/lib/auth/permissions"
+import { bomItemSchema, designBOMSchema } from "@/lib/validations/design"
+import { canViewCostPrice, getUserRole } from "@/lib/auth/permissions"
 
 export async function GET(
   request: NextRequest,
@@ -30,6 +30,7 @@ export async function GET(
         ${inventorySelect}
       `)
       .eq("design_id", params.id)
+      .order("sort_order", { ascending: true })
 
     if (error) throw error
 
@@ -47,38 +48,72 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAuth()
+    const user = await requireAuth()
     const supabase = await createServerComponentClient()
 
+    // Check permissions (admin/manager only)
+    const role = await getUserRole(user.id)
+    if (role !== "admin" && role !== "manager") {
+      return NextResponse.json(
+        { error: "Unauthorized: Admin or Manager role required" },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
-    const validated = designBOMSchema.parse({
-      ...body,
-      design_id: params.id,
-    })
+    
+    // Support both array of items (bulk replace) or single item (add)
+    if (Array.isArray(body.items)) {
+      const validated = designBOMSchema.parse({
+        ...body,
+        design_id: params.id,
+      })
 
-    // Delete existing BOM items
-    await supabase
-      .from("design_bom")
-      .delete()
-      .eq("design_id", params.id)
+      // Delete existing BOM items
+      await supabase
+        .from("design_bom")
+        .delete()
+        .eq("design_id", params.id)
 
-    // Insert new BOM items
-    const bomItems = validated.items.map((item) => ({
-      design_id: params.id,
-      inventory_item_id: item.inventory_item_id,
-      quantity: item.quantity,
-      uom: item.uom,
-      unit_cost_reference: item.unit_cost_reference,
-    }))
+      // Insert new BOM items
+      const bomItems = validated.items.map((item) => ({
+        design_id: params.id,
+        inventory_item_id: item.inventory_item_id,
+        quantity: item.quantity,
+        uom: item.uom,
+        wastage_pct: item.wastage_pct ?? 0,
+        cost_override: item.cost_override ?? null,
+        sort_order: item.sort_order ?? 0,
+      }))
 
-    const { data, error } = await supabase
-      .from("design_bom")
-      .insert(bomItems)
-      .select()
+      const { data, error } = await supabase
+        .from("design_bom")
+        .insert(bomItems)
+        .select()
 
-    if (error) throw error
+      if (error) throw error
+      return NextResponse.json(data, { status: 201 })
+    } else {
+      // Single item creation
+      const validated = bomItemSchema.parse(body)
 
-    return NextResponse.json(data, { status: 201 })
+      const { data, error } = await supabase
+        .from("design_bom")
+        .insert({
+          design_id: params.id,
+          inventory_item_id: validated.inventory_item_id,
+          quantity: validated.quantity,
+          uom: validated.uom,
+          wastage_pct: validated.wastage_pct ?? 0,
+          cost_override: validated.cost_override ?? null,
+          sort_order: validated.sort_order ?? 0,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return NextResponse.json(data, { status: 201 })
+    }
   } catch (error: any) {
     if (error.name === "ZodError") {
       return NextResponse.json(

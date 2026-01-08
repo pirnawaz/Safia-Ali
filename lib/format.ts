@@ -10,6 +10,9 @@ export function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+// Alias for formatCurrency (PKR formatting)
+export const formatPKR = formatCurrency;
+
 export function formatNumber(value: number) {
   return new Intl.NumberFormat(LOCALE).format(value);
 }

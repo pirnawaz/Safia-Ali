@@ -12,13 +12,27 @@ export async function GET(request: NextRequest) {
     // Check if user can view cost prices
     const canViewCosts = await canViewCostPrice(user.id)
 
-    // Use appropriate view/table based on permissions
-    const tableName = canViewCosts ? "designs" : "designs_public"
+    // Check for status filter (for POS - only ready products)
+    const { searchParams } = new URL(request.url)
+    const statusFilter = searchParams.get("status")
 
-    const { data, error } = await supabase
+    // Use appropriate view/table based on permissions
+    // For POS operators, always use designs_ready view (no costs)
+    let tableName = canViewCosts ? "designs" : "designs_public"
+    if (statusFilter === "ready" && !canViewCosts) {
+      tableName = "designs_ready"
+    }
+
+    let query = supabase
       .from(tableName)
       .select("*")
-      .order("created_at", { ascending: false })
+
+    // Apply status filter if provided
+    if (statusFilter) {
+      query = query.eq("status", statusFilter)
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false })
 
     if (error) throw error
 

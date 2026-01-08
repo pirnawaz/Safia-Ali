@@ -5,6 +5,7 @@ export const designSchema = z.object({
   sku: z.string().min(1, "SKU is required"),
   category: z.string().optional(),
   size_range: z.string().optional(),
+  status: z.enum(["draft", "ready"]).default("draft"),
   base_selling_price: z.number().min(0, "Price must be positive"),
   base_cost_price: z.number().min(0, "Cost must be positive").optional(),
   active: z.boolean().default(true),
@@ -15,12 +16,22 @@ export const bomItemSchema = z.object({
   inventory_item_id: z.string().uuid(),
   quantity: z.number().positive("Quantity must be positive"),
   uom: z.string().min(1, "UOM is required"),
-  unit_cost_reference: z.number().min(0).optional(),
+  wastage_pct: z.number().min(0).max(100).default(0),
+  cost_override: z.number().min(0).optional().nullable(),
+  sort_order: z.number().int().default(0),
 })
 
 export const designBOMSchema = z.object({
   design_id: z.string().uuid(),
   items: z.array(bomItemSchema),
+})
+
+export const labourLineSchema = z.object({
+  labour_type: z.string().min(1, "Labour type is required"),
+  rate: z.number().min(0, "Rate must be positive"),
+  qty: z.number().positive("Quantity must be positive").default(1),
+  notes: z.string().optional().nullable(),
+  sort_order: z.number().int().default(0),
 })
 
 export const labourCostSchema = z.object({
@@ -35,5 +46,6 @@ export const labourCostSchema = z.object({
 export type DesignInput = z.infer<typeof designSchema>
 export type BOMItemInput = z.infer<typeof bomItemSchema>
 export type DesignBOMInput = z.infer<typeof designBOMSchema>
+export type LabourLineInput = z.infer<typeof labourLineSchema>
 export type LabourCostInput = z.infer<typeof labourCostSchema>
 

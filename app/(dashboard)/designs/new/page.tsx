@@ -36,7 +36,7 @@ export default function NewDesignPage() {
       }
 
       const design = await res.json()
-      router.push(`/designs/${design.id}/edit`)
+      router.push(`/designs/${design.id}`)
     } catch (error: any) {
       alert(error.message)
     } finally {
@@ -46,11 +46,14 @@ export default function NewDesignPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold">New Design</h1>
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold font-heading">New Product</h1>
+        <p className="text-sm text-muted-foreground mt-1">Create a new product design</p>
+      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Design Information</CardTitle>
+          <CardTitle>Product Information</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -114,7 +117,7 @@ export default function NewDesignPage() {
 
             <div className="flex gap-4">
               <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Design"}
+                {loading ? "Creating..." : "Create Product"}
               </Button>
               <Button
                 type="button"

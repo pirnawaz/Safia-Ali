@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Menu, LogOut, User } from "lucide-react";
+import { Menu, LogOut, User, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -20,11 +20,13 @@ type UserInfo = { email: string; role: UserRole };
 function SidebarContent({
   user,
   loading,
+  collapsed = false,
   onNavigate,
   onLogout,
 }: {
   user: UserInfo | null;
   loading: boolean;
+  collapsed?: boolean;
   onNavigate?: () => void;
   onLogout: () => void;
 }) {
@@ -39,40 +41,68 @@ function SidebarContent({
     <div className="flex h-full flex-col">
       {/* Brand */}
       <div className="mb-5">
-        <div className="font-heading text-xl tracking-wide">Safia Ali</div>
-        <div className="mt-1 text-xs text-muted-foreground">ERP System</div>
+        {collapsed ? (
+          <div className="font-heading text-xl tracking-wide text-center">SA</div>
+        ) : (
+          <>
+            <div className="font-heading text-xl tracking-wide">Safia Ali ERP</div>
+            <div className="mt-1 text-xs text-muted-foreground">Pakistan</div>
+          </>
+        )}
         <div className="mt-3 h-px bg-border" />
       </div>
 
       {/* Profile */}
-      <div className="mb-4">
-        {loading ? (
-          <SidebarHeaderSkeleton />
-        ) : (
-          <div className="rounded-lg border border-border bg-card p-3">
-            <div className="flex items-start gap-2">
-              <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">
-                  {user?.email ?? "—"}
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  {user?.role ? <RoleBadge role={user.role} /> : null}
+      {!collapsed && (
+        <div className="mb-4">
+          {loading ? (
+            <SidebarHeaderSkeleton />
+          ) : (
+            <div className="rounded-lg border border-border bg-card p-3">
+              <div className="flex items-start gap-2">
+                <User className="mt-0.5 h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">
+                    {user?.email ?? "—"}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    {user?.role ? <RoleBadge role={user.role} /> : null}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <Button
-              className="mt-3 w-full justify-start"
-              variant="outline"
-              onClick={onLogout}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
-          </div>
-        )}
-      </div>
+              <Button
+                className="mt-3 w-full justify-start"
+                variant="outline"
+                onClick={onLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {collapsed && (
+        <div className="mb-4">
+          {!loading && (
+            <div className="flex flex-col items-center gap-2">
+              <div className="rounded-full border border-border bg-card p-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={onLogout}
+                className="h-9 w-9"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex flex-1 flex-col gap-1">
@@ -87,23 +117,34 @@ function SidebarContent({
               onClick={onNavigate}
               className={cn(
                 "relative rounded-md px-3 py-2 text-sm transition",
-                "hover:bg-muted",
-                active && "bg-muted font-medium"
+                "hover:bg-muted flex items-center gap-2",
+                active && "bg-muted font-medium",
+                collapsed && "justify-center px-2"
               )}
+              title={collapsed ? item.label : undefined}
             >
               {/* gold active indicator */}
               {active ? (
-                <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-[hsl(var(--accent))]" />
+                <span className={cn(
+                  "absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-[hsl(var(--accent))]",
+                  collapsed && "hidden"
+                )} />
               ) : null}
-              <span className="pl-2">{item.label}</span>
+              {collapsed ? (
+                <span className="text-lg">{item.label.charAt(0)}</span>
+              ) : (
+                <span className="pl-2">{item.label}</span>
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-4 text-xs text-muted-foreground">
-        Pakistan locale (PKR • Asia/Karachi)
-      </div>
+      {!collapsed && (
+        <div className="mt-4 text-xs text-muted-foreground">
+          Pakistan locale (PKR • Asia/Karachi)
+        </div>
+      )}
     </div>
   );
 }
@@ -114,6 +155,7 @@ export default function AppSidebar() {
 
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -182,8 +224,29 @@ export default function AppSidebar() {
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:w-72 md:flex-col md:border-r md:border-border md:bg-background md:p-4">
-        <SidebarContent user={user} loading={loading} onLogout={handleLogout} />
+      <aside className={cn(
+        "hidden md:flex md:flex-col md:border-r md:border-border md:bg-background md:p-4 relative transition-all duration-300",
+        collapsed ? "md:w-16" : "md:w-72"
+      )}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute -right-3 top-4 z-10 h-6 w-6 rounded-full border border-border bg-background hover:bg-muted"
+          onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </Button>
+        <SidebarContent 
+          user={user} 
+          loading={loading} 
+          collapsed={collapsed}
+          onLogout={handleLogout} 
+        />
       </aside>
     </>
   );

@@ -2,14 +2,24 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerComponentClient } from "@/lib/supabase/server"
 import { requireAuth } from "@/lib/auth/server"
 import { calculateBaseCostPrice, getCostBreakdown } from "@/lib/calculations/cost"
+import { getUserRole } from "@/lib/auth/permissions"
 
-export async function GET(
+export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAuth()
+    const user = await requireAuth()
     const supabase = await createServerComponentClient()
+
+    // Check permissions (admin/manager only)
+    const role = await getUserRole(user.id)
+    if (role !== "admin" && role !== "manager") {
+      return NextResponse.json(
+        { error: "Unauthorized: Admin or Manager role required" },
+        { status: 403 }
+      )
+    }
 
     // Get BOM items
     const { data: bomItems, error: bomError } = await supabase
@@ -35,15 +45,6 @@ export async function GET(
 
     if (labourError) throw labourError
 
-    // Get design for selling price
-    const { data: design, error: designError } = await supabase
-      .from("designs")
-      .select("base_selling_price, status")
-      .eq("id", params.id)
-      .single()
-
-    if (designError) throw designError
-
     const bomWithCosts = (bomItems || []).map((item: any) => ({
       inventory_item_id: item.inventory_item_id,
       quantity: item.quantity,
@@ -61,46 +62,41 @@ export async function GET(
     const computedCost = calculateBaseCostPrice(bomWithCosts, labourLinesData)
     const breakdown = getCostBreakdown(bomWithCosts, labourLinesData)
 
-    const margin = design.base_selling_price > 0 ? {
-      sellingPrice: design.base_selling_price,
-      cost: computedCost,
-      grossMargin: design.base_selling_price - computedCost,
-      grossMarginPct: ((design.base_selling_price - computedCost) / design.base_selling_price) * 100,
-    } : undefined
+    // Update design with computed cost
+    const { error: updateError } = await supabase
+      .from("designs")
+      .update({ 
+        base_cost_price: computedCost,
+        cost_last_computed_at: new Date().toISOString(),
+      })
+      .eq("id", params.id)
+
+    if (updateError) throw updateError
+
+    // Insert into cost audit
+    const { error: auditError } = await supabase
+      .from("design_cost_audit")
+      .insert({
+        design_id: params.id,
+        computed_cost: computedCost,
+        computed_breakdown: breakdown,
+        saved_by: user.id,
+      })
+
+    if (auditError) {
+      // Log but don't fail the request
+      console.error("Failed to save cost audit:", auditError)
+    }
 
     return NextResponse.json({
-      designId: params.id,
-      bom: {
-        lines: breakdown.breakdown.materials,
-        total: breakdown.materialCost,
-      },
-      labour: {
-        lines: breakdown.breakdown.labour,
-        total: breakdown.labourCost,
-      },
-      computedCost,
-      margin,
+      base_cost_price: computedCost,
+      breakdown,
+      saved_at: new Date().toISOString(),
     })
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Failed to compute cost" },
+      { error: error.message || "Failed to save cost" },
       { status: 500 }
     )
   }
 }
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    // POST is same as GET for compute
-    return GET(request, { params })
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to compute cost" },
-      { status: 500 }
-    )
-  }
-}
-
